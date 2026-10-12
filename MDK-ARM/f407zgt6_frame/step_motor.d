@@ -1,6 +1,7 @@
 f407zgt6_frame/step_motor.o: ..\Mod\src\step_motor.cpp \
-  ..\Mod\inc\step_motor.hpp ..\Libs\inc\Emm_V5.h ..\Core\Inc\usart.h \
-  ..\Core\Inc\main.h ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
+  ..\Mod\inc\step_motor.hpp ..\Mod\inc\line_follow_config.hpp \
+  ..\Libs\inc\Emm_V5.h ..\Core\Inc\usart.h ..\Core\Inc\main.h \
+  ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
   ..\Core\Inc\stm32f4xx_hal_conf.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_rcc.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_def.h \
@@ -24,5 +25,4 @@ f407zgt6_frame/step_motor.o: ..\Mod\src\step_motor.cpp \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
-  ..\Libs\inc\bsp_uart.h ..\Libs\inc\arm_math.h \
-  ..\Drivers\CMSIS\Include\cmsis_compiler.h
+  ..\Libs\inc\bsp_uart.h

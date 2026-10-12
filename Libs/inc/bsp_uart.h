@@ -37,16 +37,25 @@ typedef struct
     uint8_t rx_byte;                                // 单次接收的字节数，IT模式下始终为1    
     uint8_t rx_setlen;                             // 期望接收数据长度
     uint8_t rx_len;                                 // 实际接收数据长度
+    volatile uint32_t rx_rearm_errors;
 }BspUart_Instance;
+
+#define BSPUART_TX_BUFFER_SIZE 512U
 
 void BspUart_InstRegist(BspUart_Instance *inst, UART_HandleTypeDef *huart, uint8_t rx_setlen,
                         BspUart_TypeDef rxtype, BspUart_TypeDef txtype, BspUart_InstRxCallback rx_callback);
 
-void BspUart_Transmit(BspUart_Instance inst, uint8_t *data, uint8_t len);
+// 非阻塞发送会复制数据；HAL_BUSY 表示本帧未发送，调用者须重试。
+HAL_StatusTypeDef BspUart_Transmit(BspUart_Instance inst, const uint8_t *data, uint16_t len);
+uint32_t BspUart_GetTxBusyCount(const BspUart_Instance *inst);
+uint32_t BspUart_GetTxErrorCount(const BspUart_Instance *inst);
+// 仅由该串口的所属任务调用，用于恢复发送卡住或接收重新启动失败。
+void BspUart_Service(BspUart_Instance *inst);
 
 extern BspUart_Instance uart1_inst; 
 extern BspUart_Instance uart6_imu_inst;
 extern BspUart_Instance uart2_inst;
+extern BspUart_Instance uart3_gray_inst;
 
 #ifdef __cplusplus
 }

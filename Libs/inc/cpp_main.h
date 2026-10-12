@@ -1,16 +1,16 @@
-/* cpp_main.h */
-#ifndef __CPP_MAIN_H__
-#define __CPP_MAIN_H__
+#ifndef CPP_MAIN_H
+#define CPP_MAIN_H
+
+#include "chassis_app.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// 声明主循环函数
+// 由默认任务调用一次，初始化底盘与上层逻辑任务。
 void cpp_main(void);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __CPP_MAIN_H__ */
+#endif

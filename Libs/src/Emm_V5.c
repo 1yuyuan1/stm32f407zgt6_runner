@@ -10,6 +10,15 @@
  */
 
 __IO uint16_t MMCL_count = 0, MMCL_cmd[MMCL_LEN] = {0};
+static void Emm_V5_Append(const uint8_t *data, uint16_t length)
+{
+    if (MMCL_count > MMCL_LEN - 5 || length > MMCL_LEN - 5 - MMCL_count)
+    {
+        MMCL_count = MMCL_LEN; // Mark invalid until the caller flushes/resets the packet.
+        return;
+    }
+    for (uint16_t i = 0; i < length; ++i) MMCL_cmd[MMCL_count++] = data[i];
+}
 
 
 /**
@@ -32,7 +41,7 @@ __IO uint16_t MMCL_count = 0, MMCL_cmd[MMCL_LEN] = {0};
  */
 void Emm_V5_Trig_Encoder_Cal(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x06;
@@ -50,7 +59,7 @@ void Emm_V5_Trig_Encoder_Cal(uint8_t addr)
  */
 void Emm_V5_Reset_Motor(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x08;
@@ -68,7 +77,7 @@ void Emm_V5_Reset_Motor(uint8_t addr)
  */
 void Emm_V5_Reset_CurPos_To_Zero(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x0A;
@@ -86,7 +95,7 @@ void Emm_V5_Reset_CurPos_To_Zero(uint8_t addr)
  */
 void Emm_V5_Reset_Clog_Pro(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x0E;
@@ -104,7 +113,7 @@ void Emm_V5_Reset_Clog_Pro(uint8_t addr)
  */
 void Emm_V5_Restore_Motor(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x0F;
@@ -120,28 +129,30 @@ void Emm_V5_Restore_Motor(uint8_t addr)
  * @param addr 电机地址。
  * @note 组帧后通过 UART2 发送，不等待应答。
  */
-void Emm_V5_Multi_Motor_Cmd(uint8_t addr)
+bool Emm_V5_Multi_Motor_Cmd(uint8_t addr)
 {
-  uint16_t i = 0, j = 0, len = 0; __IO static uint8_t cmd[MMCL_LEN] = {0};
+  uint16_t i = 0, j = 0, len = 0; static uint8_t cmd[MMCL_LEN] = {0};
 
-	if(MMCL_count > 0)
-	{
-
-		len = MMCL_count + 5;
-
-		cmd[0] = addr;
-		cmd[1] = 0xAA;
-		cmd[2] = (uint8_t)(len >> 8);
-		cmd[3] = (uint8_t)(len);
-		for(i=0,j=4; i < MMCL_count; i++,j++) { cmd[j] = MMCL_cmd[i]; }
-		cmd[j] = 0x6B; ++j;
-
-		BspUart_Transmit(uart2_inst, cmd, j);
-	}
-	else
+	if (MMCL_count == 0 || MMCL_count > MMCL_LEN - 5)
 	{
 		MMCL_count = 0;
+		return false;
 	}
+
+	len = MMCL_count + 5;
+	cmd[0] = addr;
+	cmd[1] = 0xAA;
+	cmd[2] = (uint8_t)(len >> 8);
+	cmd[3] = (uint8_t)(len);
+	for (i = 0, j = 4; i < MMCL_count; ++i, ++j) cmd[j] = (uint8_t)MMCL_cmd[i];
+	cmd[j++] = 0x6B;
+
+	if (BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, j) == HAL_OK)
+	{
+		MMCL_count = 0;
+		return true;
+	}
+	return false;
 }
 
 
@@ -154,7 +165,7 @@ void Emm_V5_Multi_Motor_Cmd(uint8_t addr)
  */
 void Emm_V5_En_Control(uint8_t addr, bool state, bool snF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xF3;
@@ -178,7 +189,7 @@ void Emm_V5_En_Control(uint8_t addr, bool state, bool snF)
  */
 void Emm_V5_Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bool snF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xF6;
@@ -206,7 +217,7 @@ void Emm_V5_Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, bo
  */
 void Emm_V5_Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, uint32_t clk, bool raF, bool snF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0xFD;
@@ -234,7 +245,7 @@ void Emm_V5_Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t acc, ui
  */
 void Emm_V5_Stop_Now(uint8_t addr, bool snF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xFE;
@@ -253,7 +264,7 @@ void Emm_V5_Stop_Now(uint8_t addr, bool snF)
  */
 void Emm_V5_Synchronous_motion(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xFF;
@@ -272,7 +283,7 @@ void Emm_V5_Synchronous_motion(uint8_t addr)
  */
 void Emm_V5_Origin_Set_O(uint8_t addr, bool svF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x93;
@@ -293,7 +304,7 @@ void Emm_V5_Origin_Set_O(uint8_t addr, bool svF)
  */
 void Emm_V5_Origin_Trigger_Return(uint8_t addr, uint8_t o_mode, bool snF)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x9A;
@@ -312,7 +323,7 @@ void Emm_V5_Origin_Trigger_Return(uint8_t addr, uint8_t o_mode, bool snF)
  */
 void Emm_V5_Origin_Interrupt(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x9C;
@@ -330,7 +341,7 @@ void Emm_V5_Origin_Interrupt(uint8_t addr)
  */
 void Emm_V5_Origin_Read_Params(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x22;
@@ -356,7 +367,7 @@ void Emm_V5_Origin_Read_Params(uint8_t addr)
  */
 void Emm_V5_Origin_Modify_Params(uint8_t addr, bool svF, uint8_t o_mode, uint8_t o_dir, uint16_t o_vel, uint32_t o_tm, uint16_t sl_vel, uint16_t sl_ma, uint16_t sl_ms, bool potF)
 {
-  __IO static uint8_t cmd[32] = {0};
+  static uint8_t cmd[32] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x4C;
@@ -392,7 +403,7 @@ void Emm_V5_Origin_Modify_Params(uint8_t addr, bool svF, uint8_t o_mode, uint8_t
  */
 void Emm_V5_Auto_Return_Sys_Params_Timed(uint8_t addr, SysParams_t s, uint16_t time_ms)
 {
-  uint8_t i = 0; __IO static uint8_t cmd[16] = {0};
+  uint8_t i = 0; static uint8_t cmd[16] = {0};
 
   cmd[i] = addr; ++i;
 
@@ -440,7 +451,7 @@ void Emm_V5_Auto_Return_Sys_Params_Timed(uint8_t addr, SysParams_t s, uint16_t t
  */
 void Emm_V5_Read_Sys_Params(uint8_t addr, SysParams_t s)
 {
-  uint8_t i = 0; __IO static uint8_t cmd[16] = {0};
+  uint8_t i = 0; static uint8_t cmd[16] = {0};
 
   cmd[i] = addr; ++i;
 
@@ -469,7 +480,7 @@ void Emm_V5_Read_Sys_Params(uint8_t addr, SysParams_t s)
 
   cmd[i] = 0x6B; ++i;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, i);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, i);
 }
 
 
@@ -479,7 +490,7 @@ void Emm_V5_Read_Sys_Params(uint8_t addr, SysParams_t s)
  */
 void Emm_V5_Modify_Motor_ID(uint8_t addr, bool svF, uint8_t id)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xAE;
@@ -488,7 +499,7 @@ void Emm_V5_Modify_Motor_ID(uint8_t addr, bool svF, uint8_t id)
   cmd[4] =  id;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -498,7 +509,7 @@ void Emm_V5_Modify_Motor_ID(uint8_t addr, bool svF, uint8_t id)
  */
 void Emm_V5_Modify_MicroStep(uint8_t addr, bool svF, uint8_t mstep)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x84;
@@ -507,7 +518,7 @@ void Emm_V5_Modify_MicroStep(uint8_t addr, bool svF, uint8_t mstep)
   cmd[4] =  mstep;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -517,14 +528,14 @@ void Emm_V5_Modify_MicroStep(uint8_t addr, bool svF, uint8_t mstep)
  */
 void Emm_V5_Modify_PDFlag(uint8_t addr, bool pdf)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x50;
   cmd[2] =  pdf;
   cmd[3] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 4);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 4);
 }
 
 
@@ -534,13 +545,13 @@ void Emm_V5_Modify_PDFlag(uint8_t addr, bool pdf)
  */
 void Emm_V5_Read_Opt_Param_Sta(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x1A;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -550,7 +561,7 @@ void Emm_V5_Read_Opt_Param_Sta(uint8_t addr)
  */
 void Emm_V5_Modify_Motor_Type(uint8_t addr, bool svF, bool mottype)
 {
-  __IO static uint8_t cmd[16] = {0}; uint8_t MotType = 0;
+  static uint8_t cmd[16] = {0}; uint8_t MotType = 0;
 
 	if(mottype) { MotType = 25; } else { MotType = 50; }
 
@@ -561,7 +572,7 @@ void Emm_V5_Modify_Motor_Type(uint8_t addr, bool svF, bool mottype)
   cmd[4] =  MotType;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -571,7 +582,7 @@ void Emm_V5_Modify_Motor_Type(uint8_t addr, bool svF, bool mottype)
  */
 void Emm_V5_Modify_Firmware_Type(uint8_t addr, bool svF, bool fwtype)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xD5;
@@ -580,7 +591,7 @@ void Emm_V5_Modify_Firmware_Type(uint8_t addr, bool svF, bool fwtype)
   cmd[4] =  fwtype;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -590,7 +601,7 @@ void Emm_V5_Modify_Firmware_Type(uint8_t addr, bool svF, bool fwtype)
  */
 void Emm_V5_Modify_Ctrl_Mode(uint8_t addr, bool svF, bool ctrl_mode)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x46;
@@ -599,7 +610,7 @@ void Emm_V5_Modify_Ctrl_Mode(uint8_t addr, bool svF, bool ctrl_mode)
   cmd[4] =  ctrl_mode;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -609,7 +620,7 @@ void Emm_V5_Modify_Ctrl_Mode(uint8_t addr, bool svF, bool ctrl_mode)
  */
 void Emm_V5_Modify_Motor_Dir(uint8_t addr, bool svF, bool dir)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xD4;
@@ -618,7 +629,7 @@ void Emm_V5_Modify_Motor_Dir(uint8_t addr, bool svF, bool dir)
   cmd[4] =  dir;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -628,7 +639,7 @@ void Emm_V5_Modify_Motor_Dir(uint8_t addr, bool svF, bool dir)
  */
 void Emm_V5_Modify_Lock_Btn(uint8_t addr, bool svF, bool lock)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xD0;
@@ -637,7 +648,7 @@ void Emm_V5_Modify_Lock_Btn(uint8_t addr, bool svF, bool lock)
   cmd[4] =  lock;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -647,7 +658,7 @@ void Emm_V5_Modify_Lock_Btn(uint8_t addr, bool svF, bool lock)
  */
 void Emm_V5_Modify_S_Vel(uint8_t addr, bool svF, bool s_vel)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x4F;
@@ -656,7 +667,7 @@ void Emm_V5_Modify_S_Vel(uint8_t addr, bool svF, bool s_vel)
   cmd[4] =  s_vel;
   cmd[5] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 6);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 6);
 }
 
 
@@ -666,7 +677,7 @@ void Emm_V5_Modify_S_Vel(uint8_t addr, bool svF, bool s_vel)
  */
 void Emm_V5_Modify_OM_mA(uint8_t addr, bool svF, uint16_t om_ma)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x44;
@@ -676,7 +687,7 @@ void Emm_V5_Modify_OM_mA(uint8_t addr, bool svF, uint16_t om_ma)
 	cmd[5] =  (uint8_t)(om_ma >> 0);
   cmd[6] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 7);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 7);
 }
 
 
@@ -686,7 +697,7 @@ void Emm_V5_Modify_OM_mA(uint8_t addr, bool svF, uint16_t om_ma)
  */
 void Emm_V5_Modify_FOC_mA(uint8_t addr, bool svF, uint16_t foc_mA)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x45;
@@ -696,7 +707,7 @@ void Emm_V5_Modify_FOC_mA(uint8_t addr, bool svF, uint16_t foc_mA)
 	cmd[5] =  (uint8_t)(foc_mA >> 0);
   cmd[6] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 7);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 7);
 }
 
 
@@ -706,13 +717,13 @@ void Emm_V5_Modify_FOC_mA(uint8_t addr, bool svF, uint16_t foc_mA)
  */
 void Emm_V5_Read_PID_Params(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x21;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -722,7 +733,7 @@ void Emm_V5_Read_PID_Params(uint8_t addr)
  */
 void Emm_V5_Modify_PID_Params(uint8_t addr, bool svF, uint32_t kp, uint32_t ki, uint32_t kd)
 {
-  __IO static uint8_t cmd[20] = {0};
+  static uint8_t cmd[20] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0x4A;
@@ -742,7 +753,7 @@ void Emm_V5_Modify_PID_Params(uint8_t addr, bool svF, uint32_t kp, uint32_t ki, 
 	cmd[15] =  (uint8_t)(kd >> 0);
   cmd[16] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 17);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 17);
 }
 
 
@@ -752,14 +763,14 @@ void Emm_V5_Modify_PID_Params(uint8_t addr, bool svF, uint32_t kp, uint32_t ki, 
  */
 void Emm_V5_Read_DMX512_Params(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x49;
 	cmd[2] =  0x78;
   cmd[3] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 4);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 4);
 }
 
 
@@ -769,7 +780,7 @@ void Emm_V5_Read_DMX512_Params(uint8_t addr)
  */
 void Emm_V5_Modify_DMX512_Params(uint8_t addr, bool svF, uint16_t tch, uint8_t nch, uint8_t mode, uint16_t vel, uint16_t acc, uint16_t vel_step, uint32_t pos_step)
 {
-  __IO static uint8_t cmd[32] = {0};
+  static uint8_t cmd[32] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0xD9;
@@ -791,7 +802,7 @@ void Emm_V5_Modify_DMX512_Params(uint8_t addr, bool svF, uint16_t tch, uint8_t n
   cmd[17] =  (uint8_t)(pos_step >> 0);
   cmd[18] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 19);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 19);
 }
 
 
@@ -801,13 +812,13 @@ void Emm_V5_Modify_DMX512_Params(uint8_t addr, bool svF, uint16_t tch, uint8_t n
  */
 void Emm_V5_Read_Pos_Window(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x41;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -817,7 +828,7 @@ void Emm_V5_Read_Pos_Window(uint8_t addr)
  */
 void Emm_V5_Modify_Pos_Window(uint8_t addr, bool svF, uint16_t prw)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0xD1;
@@ -827,7 +838,7 @@ void Emm_V5_Modify_Pos_Window(uint8_t addr, bool svF, uint16_t prw)
 	cmd[5] =  (uint8_t)(prw >> 0);
   cmd[6] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 7);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 7);
 }
 
 
@@ -837,13 +848,13 @@ void Emm_V5_Modify_Pos_Window(uint8_t addr, bool svF, uint16_t prw)
  */
 void Emm_V5_Read_Otocp(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x13;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -853,7 +864,7 @@ void Emm_V5_Read_Otocp(uint8_t addr)
  */
 void Emm_V5_Modify_Otocp(uint8_t addr, bool svF, uint16_t otp, uint16_t ocp, uint16_t time_ms)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0xD3;
@@ -867,7 +878,7 @@ void Emm_V5_Modify_Otocp(uint8_t addr, bool svF, uint16_t otp, uint16_t ocp, uin
 	cmd[9]  =  (uint8_t)(time_ms >> 0);
   cmd[10] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 11);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 11);
 }
 
 
@@ -877,13 +888,13 @@ void Emm_V5_Modify_Otocp(uint8_t addr, bool svF, uint16_t otp, uint16_t ocp, uin
  */
 void Emm_V5_Read_Heart_Protect(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x16;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -893,7 +904,7 @@ void Emm_V5_Read_Heart_Protect(uint8_t addr)
  */
 void Emm_V5_Modify_Heart_Protect(uint8_t addr, bool svF, uint32_t hp)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0x68;
@@ -905,7 +916,7 @@ void Emm_V5_Modify_Heart_Protect(uint8_t addr, bool svF, uint32_t hp)
 	cmd[7]  =  (uint8_t)(hp >> 0);
   cmd[8]  =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 9);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 9);
 }
 
 
@@ -915,13 +926,13 @@ void Emm_V5_Modify_Heart_Protect(uint8_t addr, bool svF, uint32_t hp)
  */
 void Emm_V5_Read_Integral_Limit(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x23;
   cmd[2] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 3);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 3);
 }
 
 
@@ -931,7 +942,7 @@ void Emm_V5_Read_Integral_Limit(uint8_t addr)
  */
 void Emm_V5_Modify_Integral_Limit(uint8_t addr, bool svF, uint32_t il)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0]  =  addr;
   cmd[1]  =  0x4B;
@@ -943,7 +954,7 @@ void Emm_V5_Modify_Integral_Limit(uint8_t addr, bool svF, uint32_t il)
 	cmd[7]  =  (uint8_t)(il >> 0);
   cmd[8]  =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 9);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 9);
 }
 
 
@@ -953,14 +964,14 @@ void Emm_V5_Modify_Integral_Limit(uint8_t addr, bool svF, uint32_t il)
  */
 void Emm_V5_Read_System_State_Params(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x43;
 	cmd[2] =  0x7A;
   cmd[3] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 4);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 4);
 }
 
 
@@ -971,14 +982,14 @@ void Emm_V5_Read_System_State_Params(uint8_t addr)
  */
 void Emm_V5_Read_Motor_Conf_Params(uint8_t addr)
 {
-  __IO static uint8_t cmd[16] = {0};
+  static uint8_t cmd[16] = {0};
 
   cmd[0] =  addr;
   cmd[1] =  0x42;
 	cmd[2] =  0x6C;
   cmd[3] =  0x6B;
 
-  HAL_UART_Transmit_DMA(&huart2, (uint8_t *)cmd, 4);
+  BspUart_Transmit(uart2_inst, (const uint8_t *)cmd, 4);
 }
 
 
@@ -996,7 +1007,7 @@ void Emm_V5_MMCL_Trig_Encoder_Cal(uint8_t addr)
   cmd[2] =  0x45;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1014,7 +1025,7 @@ void Emm_V5_MMCL_Reset_Motor(uint8_t addr)
   cmd[2] =  0x97;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1032,7 +1043,7 @@ void Emm_V5_MMCL_Reset_CurPos_To_Zero(uint8_t addr)
   cmd[2] =  0x6D;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1050,7 +1061,7 @@ void Emm_V5_MMCL_Reset_Clog_Pro(uint8_t addr)
   cmd[2] =  0x52;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1068,7 +1079,7 @@ void Emm_V5_MMCL_Restore_Motor(uint8_t addr)
   cmd[2] =  0x5F;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1090,7 +1101,7 @@ void Emm_V5_MMCL_En_Control(uint8_t addr, bool state, bool snF)
   cmd[4] =  snF;
   cmd[5] =  0x6B;
 
-  for(j=0; j < 6; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 6);
 }
 
 
@@ -1116,7 +1127,7 @@ void Emm_V5_MMCL_Vel_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t ac
   cmd[6] =  snF;
   cmd[7] =  0x6B;
 
-  for(j=0; j < 8; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 8);
 }
 
 
@@ -1149,7 +1160,7 @@ void Emm_V5_MMCL_Pos_Control(uint8_t addr, uint8_t dir, uint16_t vel, uint8_t ac
   cmd[11] =  snF;
   cmd[12] =  0x6B;
 
-  for(j=0; j < 13; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 13);
 }
 
 
@@ -1169,7 +1180,7 @@ void Emm_V5_MMCL_Stop_Now(uint8_t addr, bool snF)
   cmd[3] =  snF;
   cmd[4] =  0x6B;
 
-  for(j=0; j < 5; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 5);
 }
 
 
@@ -1187,7 +1198,7 @@ void Emm_V5_MMCL_Synchronous_motion(uint8_t addr)
   cmd[2] =  0x66;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1207,7 +1218,7 @@ void Emm_V5_MMCL_Origin_Set_O(uint8_t addr, bool svF)
   cmd[3] =  svF;
   cmd[4] =  0x6B;
 
-  for(j=0; j < 5; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 5);
 }
 
 
@@ -1228,7 +1239,7 @@ void Emm_V5_MMCL_Origin_Trigger_Return(uint8_t addr, uint8_t o_mode, bool snF)
   cmd[3] =  snF;
   cmd[4] =  0x6B;
 
-  for(j=0; j < 5; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 5);
 }
 
 
@@ -1246,7 +1257,7 @@ void Emm_V5_MMCL_Origin_Interrupt(uint8_t addr)
   cmd[2] =  0x48;
   cmd[3] =  0x6B;
 
-  for(j=0; j < 4; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 4);
 }
 
 
@@ -1289,7 +1300,7 @@ void Emm_V5_MMCL_Origin_Modify_Params(uint8_t addr, bool svF, uint8_t o_mode, ui
   cmd[18] =  potF;
   cmd[19] =  0x6B;
 
-  for(j=0; j < 20; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, 20);
 }
 
 
@@ -1338,7 +1349,7 @@ void Emm_V5_MMCL_Auto_Return_Sys_Params_Timed(uint8_t addr, SysParams_t s, uint1
 
   cmd[i] = 0x6B; ++i;
 
-  for(j=0; j < i; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, i);
 }
 
 
@@ -1379,5 +1390,5 @@ void Emm_V5_MMCL_Read_Sys_Params(uint8_t addr, SysParams_t s)
 
   cmd[i] = 0x6B; ++i;
 
-  for(j=0; j < i; j++) { MMCL_cmd[MMCL_count] = cmd[j]; ++MMCL_count; }
+  Emm_V5_Append(cmd, i);
 }

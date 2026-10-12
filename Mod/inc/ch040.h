@@ -69,6 +69,11 @@ public:
         return updated;
     }
 
+    uint32_t validFrameCount() const
+    {
+        return valid_frame_count;
+    }
+
 private:
     uint8_t frame[11] = {0};
     uint8_t frame_index = 0;
@@ -80,6 +85,7 @@ private:
     float yaw_dir = 1.0f;
 
     bool updated = false;
+    uint32_t valid_frame_count = 0;
 
 private:
     static float normalizeRad(float rad)
@@ -175,6 +181,7 @@ private:
         yaw_raw_rad = normalizeRad(yaw_dir * yaw_deg * WIT_PI / 180.0f);
 
         updated = true;
+        ++valid_frame_count;
     }
 };
 

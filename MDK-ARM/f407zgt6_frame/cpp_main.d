@@ -1,5 +1,5 @@
 f407zgt6_frame/cpp_main.o: ..\Libs\src\cpp_main.cpp \
-  ..\Libs\inc\cpp_main.h ..\Mod\inc\servo.hpp ..\Libs\inc\bsp_tim_pwm.h \
+  ..\Libs\inc\cpp_main.h ..\Mod\inc\chassis_app.h ..\Core\Inc\main.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal.h \
   ..\Core\Inc\stm32f4xx_hal_conf.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_rcc.h \
@@ -24,8 +24,6 @@ f407zgt6_frame/cpp_main.o: ..\Libs\src\cpp_main.cpp \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_tim_ex.h \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
-  ..\Core\Inc\tim.h ..\Core\Inc\main.h ..\Mod\inc\ch040.h \
-  ..\Libs\inc\Emm_V5.h ..\Core\Inc\usart.h ..\Libs\inc\bsp_uart.h \
   ..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.h \
   ..\Middlewares\Third_Party\FreeRTOS\Source\include\FreeRTOS.h \
   ..\Core\Inc\FreeRTOSConfig.h \

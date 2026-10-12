@@ -698,6 +698,36 @@
               <FilePath>..\Mod\src\step_motor.cpp</FilePath>
             </File>
             <File>
+              <FileName>gray16.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Mod\src\gray16.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>line_follow.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Mod\src\line_follow.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>chassis_app.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Mod\src\chassis_app.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>chassis_control.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Mod\src\chassis_control.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>chassis_app.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Mod\inc\chassis_app.h</FilePath>
+            </File>
+            <File>
+              <FileName>line_follow_config.hpp</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Mod\inc\line_follow_config.hpp</FilePath>
+            </File>
+            <File>
               <FileName>ch040.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Mod\inc\ch040.h</FilePath>

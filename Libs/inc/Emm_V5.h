@@ -72,7 +72,7 @@ void Emm_V5_Restore_Motor(uint8_t addr);
 *** 运动控制命令
 **********************************************************/
 // 多电机命令（Y42）
-void Emm_V5_Multi_Motor_Cmd(uint8_t addr);
+bool Emm_V5_Multi_Motor_Cmd(uint8_t addr);
 // 电机使能控制
 void Emm_V5_En_Control(uint8_t addr, bool state, bool snF);
 // 速度模式控制

@@ -34,4 +34,4 @@ f407zgt6_frame/freertos.o: ..\Core\Src\freertos.c \
   ..\Drivers\STM32F4xx_HAL_Driver\Inc\stm32f4xx_hal_uart.h \
   ..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os.h \
   ..\Middlewares\Third_Party\FreeRTOS\Source\CMSIS_RTOS_V2\cmsis_os2.h \
-  ..\Libs\inc\cpp_main.h
+  ..\Libs\inc\cpp_main.h ..\Mod\inc\chassis_app.h
