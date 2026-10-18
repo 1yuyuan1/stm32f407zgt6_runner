@@ -216,6 +216,7 @@ void ChassisTask(void *)
         }
 
         status.gray_raw_bits = gray.bits;
+        status.gray_active_bits = LineConfig::WhiteLineIsOne ? gray.bits : (uint16_t)~gray.bits;
         status.gray_frame_count = gray.sequence;
 
         if (imu.sequence != 0 && imu.sequence != previous_imu_sequence)
@@ -257,6 +258,8 @@ void ChassisTask(void *)
             status.line_error_m = command.line_error_m;
             status.line_status = (uint8_t)command.status;
             status.command_speed_mps = command.speed_mps;
+            status.line_speed_rpm = command.speed_mps * 60.0f /
+                                    (3.14159265358979323846f * LineConfig::WheelDiameterM);
             status.command_omega_rad_s = command.omega_rad_s;
 
             if (!parameters_valid)
@@ -287,7 +290,8 @@ void ChassisTask(void *)
                 stop_pending = true;
             }
             else if (!motor_bus.setTwist(command.speed_mps, command.omega_rad_s,
-                                         (uint8_t)control.acceleration))
+                                         LineConfig::MotorAcceleration,
+                                         LineConfig::VelocityDirectionInverted))
             {
                 if (++consecutive_tx_failures >= 3)
                 {
@@ -310,6 +314,7 @@ void ChassisTask(void *)
                 stop_pending = true;
             }
             status.command_speed_mps = 0.0f;
+            status.line_speed_rpm = 0.0f;
             status.command_omega_rad_s = 0.0f;
         }
 
@@ -318,6 +323,7 @@ void ChassisTask(void *)
         if (status.state != CHASSIS_RUNNING)
         {
             status.command_speed_mps = 0.0f;
+            status.line_speed_rpm = 0.0f;
             status.command_omega_rad_s = 0.0f;
         }
         status.stop_pending = stop_pending;

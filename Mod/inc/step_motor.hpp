@@ -15,7 +15,7 @@ class StepMotor
 {
 public:
     StepMotor(uint8_t id, uint8_t forward_direction);
-    bool appendVelocity(float wheel_mps, uint8_t acceleration) const;
+    bool appendVelocity(float wheel_mps, uint8_t acceleration, bool invert_direction) const;
     bool appendRelativePosition(float distance_m, float speed_mps, uint8_t acceleration) const;
 
 private:
@@ -29,7 +29,8 @@ class StepMotorBus
 public:
     StepMotorBus();
     bool setTwist(float speed_mps, float omega_rad_s,
-                  uint8_t acceleration = LineConfig::MotorAcceleration);
+                  uint8_t acceleration = LineConfig::MotorAcceleration,
+                  bool invert_direction = LineConfig::VelocityDirectionInverted);
     // 最近成功提交给串口的左右轮命令，不代表电机已经达到此转速。
     float sentLeftRpm() const { return sent_left_rpm_; }
     float sentRightRpm() const { return sent_right_rpm_; }
@@ -45,7 +46,7 @@ public:
     volatile uint32_t reject_count = 0;
 
 private:
-    bool sendVelocities(float left_mps, float right_mps, uint8_t acceleration);
+    bool sendVelocities(float left_mps, float right_mps, uint8_t acceleration, bool invert_direction);
     float sent_left_rpm_ = 0.0f;
     float sent_right_rpm_ = 0.0f;
     StepMotor motors_[4];

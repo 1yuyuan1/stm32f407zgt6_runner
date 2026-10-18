@@ -36,10 +36,6 @@ struct LineCommand
 class LineFollower
 {
 public:
-    // 在实际绿色地毯和白线上验证以下极性和通道方向设置。
-    bool line_bit_is_one = LineConfig::WhiteLineIsOne;
-    bool channel_1_on_left = LineConfig::Channel1OnLeft;
-
     void reset();
     // 参数由底盘任务每周期取快照，算法不直接访问调试器全局变量。
     LineCommand step(const LineInput &input, const ChassisControl &control);

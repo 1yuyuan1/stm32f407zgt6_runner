@@ -53,7 +53,7 @@ extern "C" HAL_StatusTypeDef HAL_UART_AbortTransmit(UART_HandleTypeDef *u)
 
 static void feedSensors()
 {
-    uint8_t gray[] = {0x75, 0x80, 0x01, 0x03};
+    uint8_t gray[] = {0x75, 0x7F, 0xFE, 0x03};
     uart3_gray_inst.rx_callback(&huart3, gray, sizeof gray);
     uint8_t imu[] = {0x55, 0x53, 0, 0, 0, 0, 0, 0, 0, 0, 0xA8};
     uart6_imu_inst.rx_callback(&huart6, imu, sizeof imu);
@@ -84,12 +84,15 @@ extern "C" void vTaskDelayUntil(TickType_t *wake, TickType_t increment)
         case 1:
             assert(s.state == CHASSIS_IDLE && last_motion_size == 25);
             assert(s.ready == 1 && s.gray_frame_count > 0 && s.imu_frame_count > 0);
+            assert(s.gray_raw_bits == 0xFE7F && s.gray_active_bits == 0x0180);
+            assert(g_chassis_control.speed_rpm == 3000.0f);
             Chassis_Start();
             break;
         case 2:
             assert(s.state == CHASSIS_RUNNING && g_chassis_control.start == 0);
             assert(s.sent_left_rpm == 3000 && s.sent_right_rpm == 3000);
             assert(last_motion_size == 37 && last_motion[7] == 0x0B && last_motion[8] == 0xB8);
+            assert(last_motion[6] == 0 && last_motion[14] == 1);
             assert(Chassis_SetSpeedRpm(100));
             break;
         case 3:

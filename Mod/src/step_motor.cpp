@@ -24,14 +24,15 @@ uint16_t toRpm(float wheel_mps)
 StepMotor::StepMotor(uint8_t id, uint8_t forward_direction)
     : id_(id), forward_direction_(forward_direction) {}
 
-bool StepMotor::appendVelocity(float wheel_mps, uint8_t acceleration) const
+bool StepMotor::appendVelocity(float wheel_mps, uint8_t acceleration, bool invert_direction) const
 {
     if (!isfinite(wheel_mps) || fabsf(wheel_mps) * 60.0f /
         (kPi * kWheelDiameterM) > LineConfig::MaxMotorRpm + 0.01f) return false;
     const uint16_t rpm = toRpm(wheel_mps);
     if (rpm > LineConfig::MaxMotorRpm * LineConfig::MotorCommandScale ||
         MMCL_count + 8 > MMCL_LEN - 5) return false;
-    const uint8_t direction = wheel_mps < 0.0f ? (uint8_t)!forward_direction_ : forward_direction_;
+    uint8_t direction = wheel_mps < 0.0f ? (uint8_t)!forward_direction_ : forward_direction_;
+    if (invert_direction) direction = (uint8_t)!direction;
     Emm_V5_MMCL_Vel_Control(id_, direction, rpm, acceleration, false);
     return true;
 }
@@ -54,14 +55,15 @@ bool StepMotor::appendRelativePosition(float distance_m, float speed_mps, uint8_
 StepMotorBus::StepMotorBus()
     : motors_{StepMotor(1, 1), StepMotor(2, 0), StepMotor(3, 1), StepMotor(4, 0)} {}
 
-bool StepMotorBus::sendVelocities(float left_mps, float right_mps, uint8_t acceleration)
+bool StepMotorBus::sendVelocities(float left_mps, float right_mps, uint8_t acceleration,
+                                  bool invert_direction)
 {
     // 每个控制周期重新组装最新目标，避免旧命令不断累积。
     MMCL_count = 0;
-    const bool encoded = motors_[0].appendVelocity(left_mps, acceleration) &&
-                         motors_[1].appendVelocity(right_mps, acceleration) &&
-                         motors_[2].appendVelocity(left_mps, acceleration) &&
-                         motors_[3].appendVelocity(right_mps, acceleration);
+    const bool encoded = motors_[0].appendVelocity(left_mps, acceleration, invert_direction) &&
+                         motors_[1].appendVelocity(right_mps, acceleration, invert_direction) &&
+                         motors_[2].appendVelocity(left_mps, acceleration, invert_direction) &&
+                         motors_[3].appendVelocity(right_mps, acceleration, invert_direction);
     const bool sent = encoded && Emm_V5_Multi_Motor_Cmd(0);
     MMCL_count = 0;
     if (sent)
@@ -74,7 +76,8 @@ bool StepMotorBus::sendVelocities(float left_mps, float right_mps, uint8_t accel
     return sent;
 }
 
-bool StepMotorBus::setTwist(float speed_mps, float omega_rad_s, uint8_t acceleration)
+bool StepMotorBus::setTwist(float speed_mps, float omega_rad_s, uint8_t acceleration,
+                            bool invert_direction)
 {
     if (!isfinite(speed_mps) || !isfinite(omega_rad_s)) return false;
     float left = speed_mps - 0.5f * kTrackWidthM * omega_rad_s;
@@ -89,7 +92,7 @@ bool StepMotorBus::setTwist(float speed_mps, float omega_rad_s, uint8_t accelera
         left *= scale;
         right *= scale;
     }
-    return sendVelocities(left, right, acceleration);
+    return sendVelocities(left, right, acceleration, invert_direction);
 }
 
 bool StepMotorBus::stop()

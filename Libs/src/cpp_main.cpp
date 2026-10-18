@@ -13,7 +13,7 @@ extern "C" {
 static void UserControlUpdate()
 {
     // 示例：在启动按键的触发分支中调用 Chassis_Start()。
-    // 示例：需要调整速度时调用 Chassis_SetSpeedRpm(3000.0f)。
+    // 示例：需要调整速度时调用 Chassis_SetSpeedRpm(50.0f)。
     // 示例：在停止按键的触发分支中调用 Chassis_Stop()。
     // 默认不自动启动，可直接在 Keil Watch 中修改 g_chassis_control。
 }

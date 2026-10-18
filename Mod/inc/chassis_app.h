@@ -24,17 +24,15 @@ typedef enum {
 } ChassisFault;
 
 // Keil Watch 可写入口：参数在下一控制周期读取；多个参数建议在待机时修改。
-// 启动后直线、弯道和短虚线均使用同一个基础转速，不再按偏差自动降速。
+// Watch 中只保留启动、停止、基础转速、巡线增益、转向上限和弯道速度比例。
 typedef struct {
-    uint32_t start;        // 写 1 请求启动，任务处理后清零
-    uint32_t stop;         // 写 1 请求停止，优先于启动，处理后清零
-    float speed_rpm;      // 基础转速，0～5000RPM；0 表示保持运行状态但四轮零速
-    float kp;             // 横向偏差比例增益，输入米，输出弧度/秒
-    float kd;             // 横向偏差微分增益
-    float yaw_damping;    // 偏航角速度阻尼增益
-    float gap_heading_kp; // 短断线时的航向保持增益
-    float max_omega;      // 目标角速度上限，单位弧度/秒
-    uint32_t acceleration; // Emm 加速度档位，0～255；0 为直接启动
+    uint32_t start;          // 写 1 请求启动，任务处理后清零
+    uint32_t stop;           // 写 1 请求停止，优先于启动，处理后清零
+    float speed_rpm;         // 直线基础转速，0～5000RPM
+    float kp;                // 横向偏差比例增益
+    float kd;                // 横向偏差变化率微分增益
+    float max_omega;         // 最大转向角速度，弧度/秒
+    float turn_speed_ratio;  // 最大转向需求时的速度比例，0.1～1
 } ChassisControl;
 
 // Keil Watch 只读入口：按车辆前进方向统一命令符号，反馈保留驱动器原始符号。
@@ -46,6 +44,7 @@ typedef struct {
     uint32_t stop_pending;      // 停车帧尚未被发送接口接受时为 1
     uint32_t control_count;     // 底盘控制周期计数
     float applied_speed_rpm;    // 本周期通过检查的基础转速
+    float line_speed_rpm;       // 算法根据转向需求降速后的目标转速
     float command_speed_mps;   // 算法目标前进速度，尚未经过单轮限速
     float command_omega_rad_s; // 算法目标角速度，左转为正
     float line_error_m;         // 白线偏差，右侧为正
@@ -54,6 +53,7 @@ typedef struct {
     float motor_feedback_rpm[4]; // ID 1～4 的实测转速，保留驱动器符号
     uint32_t motor_feedback_count[4]; // 各电机有效转速帧数，停车时也应增长
     uint16_t gray_raw_bits;     // 原始 16 路灰度数据
+    uint16_t gray_active_bits;  // 按灰度有效电平解释后的有效线位
     uint32_t gray_frame_count;  // 有效灰度帧累计次数
     uint32_t gray_timeout_count;
     float imu_yaw_rad;

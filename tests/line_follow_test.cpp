@@ -79,38 +79,32 @@ static void testLine()
 {
     LineFollower follower;
     ChassisControl control = {0, 0, 48.0f, LineConfig::Kp, LineConfig::Kd,
-                              LineConfig::YawRateDamping, LineConfig::GapHeadingKp,
-                              LineConfig::MaxOmega, LineConfig::MotorAcceleration};
-    LineInput input = {0x0180, true, 0.0f, 0.0f, true, 0.01f};
+                              LineConfig::DefaultMaxOmega, 0.45f};
+    LineInput input = {(uint16_t)~0x0180, true, 0.0f, 0.0f, true, 0.01f};
     auto command = follower.step(input, control);
     assert(command.status == LineStatus::Tracking && std::fabs(command.omega_rad_s) < 0.001f);
     assert(command.speed_mps > 0.0f);
-    input.gray_bits = 0x0030; // 白线位于左侧
+    input.gray_bits = (uint16_t)~0x0030; // 白线位于左侧
     follower.reset();
     command = follower.step(input, control);
     assert(command.omega_rad_s > 0.0f);
-    input.gray_bits = 0x0C00; // 白线位于右侧
+    assert(command.speed_mps < 48.0f * 3.14159265358979323846f * 0.1f / 60.0f);
+    input.gray_bits = (uint16_t)~0x0C00; // 白线位于右侧
     follower.reset();
     assert(follower.step(input, control).omega_rad_s < 0.0f);
-    follower.channel_1_on_left = false;
+    input.gray_bits = 0xFFFF; // 绿色背景为高电平，不能识别成整片白线
     follower.reset();
-    assert(follower.step(input, control).omega_rad_s > 0.0f);
-    follower.channel_1_on_left = true;
-    follower.line_bit_is_one = false;
+    assert(follower.step(input, control).status == LineStatus::NoLine);
     input.gray_bits = (uint16_t)~0x0180;
     follower.reset();
-    assert(std::fabs(follower.step(input, control).line_error_m) < 0.001f);
-    follower.line_bit_is_one = true;
-    input.gray_bits = 0x0180;
-    follower.reset();
     follower.step(input, control);
-    input.gray_bits = 0;
+    input.gray_bits = 0xFFFF;
     input.yaw_rad = 0.05f;
     command = follower.step(input, control);
     assert(command.status == LineStatus::ShortGap && command.omega_rad_s < 0);
     for (unsigned i=0; i<60; ++i) command = follower.step(input, control);
     assert(command.status == LineStatus::NoLine && command.speed_mps == 0);
-    input.gray_bits = 0xFFFF;
+    input.gray_bits = 0x0000;
     assert(follower.step(input, control).status == LineStatus::Ambiguous);
     input.gray_fresh = false;
     assert(follower.step(input, control).status == LineStatus::NoSensor);
@@ -119,11 +113,11 @@ static void testLine()
     assert(follower.step(input, control).status == LineStatus::NoSensor);
     input.imu_fresh = true;
     follower.reset();
-    input.gray_bits = 0;
+    input.gray_bits = 0xFFFF;
     assert(follower.step(input, control).status == LineStatus::NoLine);
-    input.gray_bits = 0x0180;
+    input.gray_bits = (uint16_t)~0x0180;
     follower.step(input, control);
-    input.gray_bits = 0;
+    input.gray_bits = 0xFFFF;
     input.yaw_rate_rad_s = 1.0f;
     assert(follower.step(input, control).status == LineStatus::NoLine); // 转弯丢线时不得盲目跨越缺口
 }
@@ -145,35 +139,51 @@ static void testRuntimeControl()
     assert(g_chassis_control.start == 1 && g_chassis_control.stop == 1);
     g_chassis_control.start = g_chassis_control.stop = 0;
 
-    ChassisControl control = {0, 0, 3000.0f, 12, 0.08f, 0.15f, 2.5f, 1.2f, 200};
+    ChassisControl control = {0, 0, 3000.0f, 12, 0.08f, 1.2f, 0.25f};
     assert(Chassis_ParametersValid(&control));
     LineFollower follower;
-    LineInput input = {0x0180, true, 0, 0, true, 0.01f};
+    LineInput input = {(uint16_t)~0x0180, true, 0, 0, true, 0.01f};
     const float expected = 3000.0f * 3.14159265358979323846f * 0.1f / 60.0f;
     auto straight = follower.step(input, control);
     assert(std::fabs(straight.speed_mps - expected) < 0.0001f);
-    input.gray_bits = 0x0030;
+    input.gray_bits = (uint16_t)~0x0030;
     auto curve = follower.step(input, control);
-    assert(curve.speed_mps == straight.speed_mps && curve.omega_rad_s > 0);
+    assert(curve.speed_mps < straight.speed_mps && curve.omega_rad_s > 0);
 
-    // 速度变更在下一次算法调用生效；短缺口也使用同一速度。
+    // 转向饱和时达到弯道速度比例；提高上限后能产生更大的转向输出。
+    control.kp = 100;
+    follower.reset();
+    auto saturated = follower.step(input, control);
+    assert(std::fabs(saturated.omega_rad_s - control.max_omega) < 0.0001f);
+    assert(std::fabs(saturated.speed_mps - expected * 0.25f) < 0.0001f);
+    control.max_omega = 2.0f;
+    follower.reset();
+    assert(follower.step(input, control).omega_rad_s > saturated.omega_rad_s);
+    control.max_omega = 1.2f;
+    control.kp = 12;
+
+    // 速度变更在下一次算法调用生效；短缺口逐步降低速度。
     control.speed_rpm = 100;
     follower.reset();
-    input.gray_bits = 0x0180;
+    input.gray_bits = (uint16_t)~0x0180;
     straight = follower.step(input, control);
-    input.gray_bits = 0;
+    input.gray_bits = 0xFFFF;
     auto gap = follower.step(input, control);
-    assert(gap.status == LineStatus::ShortGap && gap.speed_mps == straight.speed_mps);
+    assert(gap.status == LineStatus::ShortGap && gap.speed_mps < straight.speed_mps &&
+           gap.speed_mps > straight.speed_mps * 0.8f);
+    control.speed_rpm = 0;
+    gap = follower.step(input, control);
+    assert(gap.status == LineStatus::ShortGap && gap.speed_mps == 0 && gap.omega_rad_s == 0);
     follower.reset();
     control.speed_rpm = 3000;
-    input.gray_bits = 0x0180;
+    input.gray_bits = (uint16_t)~0x0180;
     follower.step(input, control);
-    input.gray_bits = 0;
+    input.gray_bits = 0xFFFF;
     // 高速下一个周期就可能超过 7cm，不能为了维持高速而绕过缺口限制。
     assert(follower.step(input, control).status == LineStatus::NoLine);
 
     control.speed_rpm = 0;
-    input.gray_bits = 0x0030;
+    input.gray_bits = (uint16_t)~0x0030;
     follower.reset();
     auto zero = follower.step(input, control);
     assert(zero.speed_mps == 0 && zero.omega_rad_s == 0);
@@ -183,7 +193,16 @@ static void testRuntimeControl()
     control.kp = std::numeric_limits<float>::quiet_NaN();
     assert(!Chassis_ParametersValid(&control));
     control.kp = 12;
-    control.acceleration = 256;
+    control.max_omega = 11.0f;
+    assert(!Chassis_ParametersValid(&control));
+    control.max_omega = 0;
+    assert(!Chassis_ParametersValid(&control));
+    control.max_omega = 1.2f;
+    control.turn_speed_ratio = 0.09f;
+    assert(!Chassis_ParametersValid(&control));
+    control.turn_speed_ratio = 1.01f;
+    assert(!Chassis_ParametersValid(&control));
+    control.turn_speed_ratio = std::numeric_limits<float>::quiet_NaN();
     assert(!Chassis_ParametersValid(&control));
     assert(!Chassis_ParametersValid(nullptr));
 }
@@ -203,7 +222,7 @@ static void testMotorAndDma()
         {
             const unsigned offset = 4 + motor*8;
             assert(dma_bytes[offset] == motor+1 && dma_bytes[offset+1] == 0xF6);
-            assert(dma_bytes[offset+2] == (motor%2 == 0 ? 1 : 0));
+            assert(dma_bytes[offset+2] == (motor%2 == 0 ? 0 : 1));
             assert(dma_bytes[offset+4] == 48);
         }
         uint8_t preserved[37];
@@ -230,6 +249,7 @@ static void testMotorAndDma()
         unsigned offset = 4 + 8 * m;
         assert(((dma_bytes[offset+3] << 8) | dma_bytes[offset+4]) == 3000);
         assert(dma_bytes[offset+5] == 123);
+        assert(dma_bytes[offset+2] == (m % 2 == 0 ? 0 : 1));
     }
     assert(bus.sentLeftRpm() == 3000 && bus.sentRightRpm() == 3000);
     completeTx();

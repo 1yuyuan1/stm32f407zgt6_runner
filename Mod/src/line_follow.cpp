@@ -35,12 +35,12 @@ LineCommand LineFollower::step(const LineInput &input, const ChassisControl &con
     if (!Chassis_ParametersValid(&control))
         return {0.0f, 0.0f, filtered_error_m_, LineStatus::InvalidParameter};
 
-    // 统一基础转速；内部几何计算使用米和弧度，接口调试使用 RPM。
-    const float speed = control.speed_rpm * (kPi * WheelDiameterM) / 60.0f;
+    // 基础转速换算为车体线速度；弯道降速由实际转向需求连续决定。
+    const float base_speed = control.speed_rpm * (kPi * WheelDiameterM) / 60.0f;
     if (!input.gray_fresh || !input.imu_fresh)
         return {0.0f, 0.0f, filtered_error_m_, LineStatus::NoSensor};
 
-    const uint16_t active = line_bit_is_one ? input.gray_bits : (uint16_t)~input.gray_bits;
+    const uint16_t active = WhiteLineIsOne ? input.gray_bits : (uint16_t)~input.gray_bits;
     uint8_t active_count = 0;
     bool found = false;
     float best_error_m = 0.0f;
@@ -64,7 +64,7 @@ LineCommand LineFollower::step(const LineInput &input, const ChassisControl &con
         const uint8_t last = (uint8_t)(i - 1);
         const uint8_t width = (uint8_t)(last - first + 1);
         const float physical_index = ((float)first + (float)last) * 0.5f - 7.5f;
-        const float candidate = physical_index * SensorPitchM * (channel_1_on_left ? 1.0f : -1.0f);
+        const float candidate = physical_index * SensorPitchM * (Channel1OnLeft ? 1.0f : -1.0f);
         const float distance = fabsf(candidate - (had_line_ ? filtered_error_m_ : 0.0f));
         if (!found || distance < best_distance)
         {
@@ -92,8 +92,10 @@ LineCommand LineFollower::step(const LineInput &input, const ChassisControl &con
 
         // 前置约 20cm 的单排传感器，其测得的偏差同时受车体横向偏移和航向影响。
         const float omega = clamp(-control.kp * filtered_error_m_ - control.kd * derivative
-                                  - control.yaw_damping * input.yaw_rate_rad_s,
+                                  - YawRateDamping * input.yaw_rate_rad_s,
                                   -control.max_omega, control.max_omega);
+        const float turn_demand = clamp(fabsf(omega) / control.max_omega, 0.0f, 1.0f);
+        const float speed = base_speed * (1.0f - (1.0f - control.turn_speed_ratio) * turn_demand);
         last_speed_mps_ = speed;
         return {speed, speed > 0.0f ? omega : 0.0f, filtered_error_m_, LineStatus::Tracking};
     }
@@ -111,7 +113,11 @@ LineCommand LineFollower::step(const LineInput &input, const ChassisControl &con
         return {0.0f, 0.0f, filtered_error_m_, LineStatus::NoLine};
 
     const float heading_error = wrapPi(last_line_yaw_rad_ - input.yaw_rad);
-    const float omega = clamp(control.gap_heading_kp * heading_error, -control.max_omega, control.max_omega);
-    last_speed_mps_ = speed;
-    return {speed, speed > 0.0f ? omega : 0.0f, filtered_error_m_, LineStatus::ShortGap};
+    const float omega = clamp(GapHeadingKp * heading_error,
+                              -control.max_omega, control.max_omega);
+    const float gap_speed = base_speed * control.turn_speed_ratio;
+    // 降低基础转速立即限幅，尤其是写入零速时不能继续沿用上一周期的速度。
+    last_speed_mps_ = clamp(last_speed_mps_ * 0.8f + gap_speed * 0.2f, 0.0f, base_speed);
+    return {last_speed_mps_, last_speed_mps_ > 0.0f ? omega : 0.0f,
+            filtered_error_m_, LineStatus::ShortGap};
 }

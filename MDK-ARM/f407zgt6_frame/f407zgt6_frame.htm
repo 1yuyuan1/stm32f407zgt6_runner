@@ -3,11 +3,11 @@
 <title>Static Call Graph - [f407zgt6_frame\f407zgt6_frame.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image f407zgt6_frame\f407zgt6_frame.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Mon Oct 12 21:48:21 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Sun Oct 18 12:10:07 2026
 <BR><P>
-<H3>Maximum Stack Usage =        416 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =        408 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
-(anonymous namespace)::ChassisTask(void*) &rArr; StepMotorBus::setTwist(float, float, unsigned char) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
+(anonymous namespace)::ChassisTask(void*) &rArr; StepMotorBus::setTwist(float, float, unsigned char, bool) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char, bool) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
 <P>
 <H3>
 Functions with no stack information
@@ -146,8 +146,8 @@ Function Pointers
 Global Symbols
 </H3>
 <P><STRONG><a name="[5c]"></a>__main</STRONG> (Thumb, 8 bytes, Stack size 0 bytes, __main.o(!!!main))
-<BR><BR>[Calls]<UL><LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
-<LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry
+<BR><BR>[Calls]<UL><LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__rt_entry
+<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f407xx.o(.text)
 </UL>
@@ -249,8 +249,8 @@ Global Symbols
 <P><STRONG><a name="[135]"></a>__rt_lib_shutdown_user_alloc_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, libshutdown2.o(.ARM.Collect$$libshutdown$$0000000C))
 
 <P><STRONG><a name="[70]"></a>__rt_entry</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry.o(.ARM.Collect$$rtentry$$00000000))
-<BR><BR>[Called By]<UL><LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload_rt2
-<LI><a href="#[5c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__main
+<BR><BR>[Called By]<UL><LI><a href="#[5c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__main
+<LI><a href="#[71]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__scatterload_rt2
 </UL>
 
 <P><STRONG><a name="[136]"></a>__rt_entry_presh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000002))
@@ -674,7 +674,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cpp_main
 </UL>
 
-<P><STRONG><a name="[dc]"></a>Chassis_ParametersValid</STRONG> (Thumb, 188 bytes, Stack size 0 bytes, chassis_control.o(.text.Chassis_ParametersValid))
+<P><STRONG><a name="[dc]"></a>Chassis_ParametersValid</STRONG> (Thumb, 184 bytes, Stack size 0 bytes, chassis_control.o(.text.Chassis_ParametersValid))
 <BR><BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;(anonymous namespace)::ChassisTask(void*)
 <LI><a href="#[db]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LineFollower::step(LineInput const&, ChassisControl const&)
 </UL>
@@ -747,7 +747,7 @@ Global Symbols
 <P><STRONG><a name="[de]"></a>Emm_V5_MMCL_Vel_Control</STRONG> (Thumb, 180 bytes, Stack size 16 bytes, emm_v5.o(.text.Emm_V5_MMCL_Vel_Control))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = Emm_V5_MMCL_Vel_Control
 </UL>
-<BR>[Called By]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char)
+<BR>[Called By]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char, bool)
 </UL>
 
 <P><STRONG><a name="[98]"></a>Emm_V5_Multi_Motor_Cmd</STRONG> (Thumb, 232 bytes, Stack size 96 bytes, emm_v5.o(.text.Emm_V5_Multi_Motor_Cmd))
@@ -756,7 +756,7 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;BspUart_Transmit
 </UL>
 <BR>[Called By]<UL><LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::stop()
-<LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char)
+<LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char, bool)
 </UL>
 
 <P><STRONG><a name="[89]"></a>Error_Handler</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, main.o(.text.Error_Handler))
@@ -1367,7 +1367,7 @@ Global Symbols
 
 <P><STRONG><a name="[14a]"></a>Gray16Parser::Gray16Parser__sub_object()</STRONG> (Thumb, 16 bytes, Stack size 0 bytes, gray16.o(.text._ZN12Gray16ParserC2Ev), UNUSED)
 
-<P><STRONG><a name="[db]"></a>LineFollower::step(LineInput const&, ChassisControl const&)</STRONG> (Thumb, 2208 bytes, Stack size 48 bytes, line_follow.o(.text._ZN12LineFollower4stepERK9LineInputRK14ChassisControl))
+<P><STRONG><a name="[db]"></a>LineFollower::step(LineInput const&, ChassisControl const&)</STRONG> (Thumb, 1676 bytes, Stack size 48 bytes, line_follow.o(.text._ZN12LineFollower4stepERK9LineInputRK14ChassisControl))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = LineFollower::step(LineInput const&, ChassisControl const&)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[dc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Chassis_ParametersValid
@@ -1379,13 +1379,13 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;(anonymous namespace)::ChassisTask(void*)
 </UL>
 
-<P><STRONG><a name="[dd]"></a>StepMotorBus::sendVelocities(float, float, unsigned char)</STRONG> (Thumb, 420 bytes, Stack size 104 bytes, step_motor.o(.text._ZN12StepMotorBus14sendVelocitiesEffh))
-<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = StepMotorBus::sendVelocities(float, float, unsigned char) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
+<P><STRONG><a name="[dd]"></a>StepMotorBus::sendVelocities(float, float, unsigned char, bool)</STRONG> (Thumb, 464 bytes, Stack size 104 bytes, step_motor.o(.text._ZN12StepMotorBus14sendVelocitiesEffhb))
+<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = StepMotorBus::sendVelocities(float, float, unsigned char, bool) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
 </UL>
 <BR>[Calls]<UL><LI><a href="#[de]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Emm_V5_MMCL_Vel_Control
 <LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Emm_V5_Multi_Motor_Cmd
 </UL>
-<BR>[Called By]<UL><LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::setTwist(float, float, unsigned char)
+<BR>[Called By]<UL><LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::setTwist(float, float, unsigned char, bool)
 </UL>
 
 <P><STRONG><a name="[df]"></a>StepMotorBus::requestVelocity(unsigned char)</STRONG> (Thumb, 82 bytes, Stack size 88 bytes, step_motor.o(.text._ZN12StepMotorBus15requestVelocityEh))
@@ -1411,10 +1411,10 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;(anonymous namespace)::ChassisTask(void*)
 </UL>
 
-<P><STRONG><a name="[e2]"></a>StepMotorBus::setTwist(float, float, unsigned char)</STRONG> (Thumb, 84 bytes, Stack size 0 bytes, step_motor.o(.text._ZN12StepMotorBus8setTwistEffh))
-<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = StepMotorBus::setTwist(float, float, unsigned char) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
+<P><STRONG><a name="[e2]"></a>StepMotorBus::setTwist(float, float, unsigned char, bool)</STRONG> (Thumb, 84 bytes, Stack size 0 bytes, step_motor.o(.text._ZN12StepMotorBus8setTwistEffhb))
+<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = StepMotorBus::setTwist(float, float, unsigned char, bool) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char, bool) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
 </UL>
-<BR>[Calls]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char)
+<BR>[Calls]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::sendVelocities(float, float, unsigned char, bool)
 </UL>
 <BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;(anonymous namespace)::ChassisTask(void*)
 </UL>
@@ -2006,8 +2006,8 @@ Local Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> chassis_app.o(.text.Chassis_Init)
 </UL>
-<P><STRONG><a name="[61]"></a>(anonymous namespace)::ChassisTask(void*)</STRONG> (Thumb, 1862 bytes, Stack size 136 bytes, chassis_app.o(.text._ZN12_GLOBAL__N_111ChassisTaskEPv))
-<BR><BR>[Stack]<UL><LI>Max Depth = 416<LI>Call Chain = (anonymous namespace)::ChassisTask(void*) &rArr; StepMotorBus::setTwist(float, float, unsigned char) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
+<P><STRONG><a name="[61]"></a>(anonymous namespace)::ChassisTask(void*)</STRONG> (Thumb, 1904 bytes, Stack size 128 bytes, chassis_app.o(.text._ZN12_GLOBAL__N_111ChassisTaskEPv))
+<BR><BR>[Stack]<UL><LI>Max Depth = 408<LI>Call Chain = (anonymous namespace)::ChassisTask(void*) &rArr; StepMotorBus::setTwist(float, float, unsigned char, bool) &rArr; StepMotorBus::sendVelocities(float, float, unsigned char, bool) &rArr; Emm_V5_Multi_Motor_Cmd &rArr; BspUart_Transmit &rArr; HAL_UART_Transmit_DMA &rArr; HAL_DMA_Start_IT
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[e5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;vPortExitCritical
@@ -2019,7 +2019,7 @@ Local Symbols
 <LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::feedback(unsigned char) const
 <LI><a href="#[df]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::requestVelocity(unsigned char)
 <LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::stop()
-<LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::setTwist(float, float, unsigned char)
+<LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;StepMotorBus::setTwist(float, float, unsigned char, bool)
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;vTaskDelayUntil
 <LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;xTaskGetTickCount
 <LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;BspUart_Service
